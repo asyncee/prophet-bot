@@ -6,6 +6,8 @@ from telegram.ext import CommandHandler
 from telegram.ext import MessageHandler, Filters
 from telegram.ext import Updater
 
+from exact_time import extractor
+
 dotenv.load_dotenv(dotenv.find_dotenv())
 
 logging.basicConfig(
@@ -23,11 +25,18 @@ def error(bot, update, error):
 
 
 def start(bot, update):
-    bot.send_message(chat_id=update.message.chat_id, text="I'm a bot, please talk to me!")
+    bot.send_message(
+        chat_id=update.message.chat_id,
+        text='Напишите, о чем вам напомнить. Соощение может быть вида: "забрать посылку завтра в 10".'
+    )
 
 
-def echo(bot, update):
-    bot.send_message(chat_id=update.message.chat_id, text=update.message.text)
+def print_exact_time(bot, update):
+    extract = extractor(update.message.text)
+    text = f"""
+    "{extract.task}" — напомню "{extract.time_string}" ({extract.time.strftime('%Y-%m-%d %H:%M')})
+    """
+    bot.send_message(chat_id=update.message.chat_id, text=text)
 
 
 def unknown(bot, update):
@@ -36,8 +45,8 @@ def unknown(bot, update):
     )
 
 
-echo_handler = MessageHandler(Filters.text, echo)
-dispatcher.add_handler(echo_handler)
+exact_time_handler = MessageHandler(Filters.text, print_exact_time)
+dispatcher.add_handler(exact_time_handler)
 
 
 start_handler = CommandHandler("start", start)
