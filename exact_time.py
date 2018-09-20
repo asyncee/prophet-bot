@@ -100,6 +100,7 @@ DAYS = {
     "воскресенье": 7,
     "завтра": 8,
     "послезавтра": 9,
+    "сегодня": 10,
 }
 
 hours_map_after = {
@@ -196,9 +197,11 @@ class DayEnum(enum.IntEnum):
     SUNDAY = 7
     TOMORROW = 8
     DAY_AFTER_TOMORROW = 9
+    TODAY = 10
 
     def get_date(self, base):
-        if self.value < 8:
+        # Day of week
+        if self.value <= self.SUNDAY:
             r_rule = iter(
                 rrule.rrule(
                     rrule.DAILY, dtstart=base, byweekday=rrule.weekdays[self.value - 1], count=2
@@ -211,11 +214,14 @@ class DayEnum(enum.IntEnum):
 
             return next_date
 
-        if self.value == 8:
+        if self.value == self.TOMORROW:
             return base + dt.timedelta(days=1)
 
-        if self.value == 9:
+        if self.value == self.DAY_AFTER_TOMORROW:
             return base + dt.timedelta(days=2)
+
+        if self.value == self.TODAY:
+            return base
 
         raise NotImplementedError
 
@@ -324,13 +330,19 @@ EXACT_TIME = or_(
         TIME.interpretation(AtTime.time),
         AT_TIME_OF_DAY.optional().interpretation(AtTime.time_of_day),
     ),
+    # ... вечером
+    # сходить в магазин вечером
+    rule(
+        DAYNAME.optional().interpretation(AtTime.day),
+        AT_TIME_OF_DAY.interpretation(AtTime.time_of_day),
+    ),
 ).interpretation(AtTime)
 
 
 parser = Parser(EXACT_TIME)
 
 
-Extract = namedtuple("Extract", "time, task, time_string")
+Extract = namedtuple("Extract", "time, task, time_string, fact")
 
 
 def extractor(string, moment=None) -> Extract:
@@ -345,7 +357,7 @@ def extractor(string, moment=None) -> Extract:
     time = match.fact.get_datetime(moment)
     task = (string[: match.span.start] + string[match.span.stop :]).strip()
     time_string = string[match.span.start : match.span.stop]
-    return Extract(time, task, time_string)
+    return Extract(time, task, time_string, match.fact)
 
 
 # print("---dates---")
