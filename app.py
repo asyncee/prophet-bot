@@ -2,7 +2,7 @@ import logging
 import os
 
 import dotenv
-from telegram.ext import CommandHandler
+from telegram.ext import CommandHandler, StringCommandHandler
 from telegram.ext import MessageHandler, Filters
 from telegram.ext import Updater
 
@@ -20,6 +20,9 @@ updater = Updater(token=os.environ["TOKEN"])
 dispatcher = updater.dispatcher
 
 
+unrecognized_phrases = set()
+
+
 def error(bot, update, error):
     logger.warning('Update "%s" caused error "%s"' % (update, error))
 
@@ -32,10 +35,23 @@ def start(bot, update):
 
 
 def print_exact_time(bot, update):
+    global unrecognized_phrases
     extract = extractor(update.message.text)
-    text = f"""
-    "{extract.task}" — напомню "{extract.time_string}" ({extract.time.strftime('%Y-%m-%d %H:%M')})
-    """
+
+    if extract is None:
+        unrecognized_phrases.add(update.message.text)
+        text = 'Я ничего не поняла.'
+    else:
+        text = f"""
+        "{extract.task}" — напомню "{extract.time_string}" ({extract.time.strftime('%Y-%m-%d %H:%M')})
+        """
+
+    bot.send_message(chat_id=update.message.chat_id, text=text)
+
+
+def print_unrecognized_phrases(bot, update):
+    global unrecognized_phrases
+    text = ', '.join(unrecognized_phrases)
     bot.send_message(chat_id=update.message.chat_id, text=text)
 
 
@@ -48,6 +64,8 @@ def unknown(bot, update):
 exact_time_handler = MessageHandler(Filters.text, print_exact_time)
 dispatcher.add_handler(exact_time_handler)
 
+unrecognized_handler = CommandHandler("print", print_unrecognized_phrases)
+dispatcher.add_handler(unrecognized_handler)
 
 start_handler = CommandHandler("start", start)
 dispatcher.add_handler(start_handler)
