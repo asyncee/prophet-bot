@@ -44,23 +44,53 @@ class Time(Time):
 
 
 class Date(Date):
-    def get_date(self, base):
-        return dt.date(self.year or base.year, self.month or base.month, self.day or base.day)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if not self.year:
+            self.year = dt.datetime.today().year + 1
+
+    def get_date(self, current):
+        return dt.date(
+            self.year or current.year, self.month or current.month, self.day or current.day
+        )
 
 
 class AtTime(AtTime):
-    def get_datetime(self, base) -> dt.datetime:
+    def get_datetime(self, current) -> dt.datetime:
         time = self.default_time()
-        date = base.date()
+        date = current.date()
 
         if self.time:
             time = self.time.get_time()
 
         if self.day:
-            date = self.day.get_date(base)
+            date = self.day.get_date(current)
 
         time = self.prepare_time(time)
 
+        return self.postprocess(current, self.combine(date, time))
+
+    def postprocess(self, current, result):
+        if current >= result:
+            if (current - result).seconds < 60 * 60 * 24:
+
+                shifted_result = result.replace(hour=hours_map_after[result.hour])
+
+                # No time of day, try to shift hour (until next day maximum).
+                if self.time_of_day is None and shifted_result > current:
+                    return shifted_result
+
+                # Time of day specified and it contains shifted hour.
+                elif self.time_of_day.contains(shifted_result.hour):
+                    return shifted_result
+
+                # Shift one day forward.
+                else:
+                    return result + dt.timedelta(days=1)
+
+        return result
+
+    def combine(self, date, time):
         return dt.datetime.combine(date, time)
 
     def prepare_time(self, time):
@@ -98,6 +128,7 @@ DAYS = {
     "пятница": 5,
     "суббота": 6,
     "воскресенье": 7,
+    "воскресение": 7,
     "завтра": 8,
     "послезавтра": 9,
     "сегодня": 10,
@@ -186,6 +217,13 @@ class TimeOfDayEnum(enum.Enum):
 
         raise NotImplementedError
 
+    @classmethod
+    def find(cls, hour) -> "TimeOfDayEnum":
+        for tod in cls:
+            if tod.contains(hour):
+                return tod
+        raise ValueError(f'Invalid hour: "{hour}"')
+
 
 class DayEnum(enum.IntEnum):
     MONDAY = 1
@@ -199,29 +237,29 @@ class DayEnum(enum.IntEnum):
     DAY_AFTER_TOMORROW = 9
     TODAY = 10
 
-    def get_date(self, base):
+    def get_date(self, current):
         # Day of week
         if self.value <= self.SUNDAY:
             r_rule = iter(
                 rrule.rrule(
-                    rrule.DAILY, dtstart=base, byweekday=rrule.weekdays[self.value - 1], count=2
+                    rrule.DAILY, dtstart=current, byweekday=rrule.weekdays[self.value - 1], count=2
                 )
             )
             next_date = next(r_rule)
 
-            if next_date.date() == base.date():
+            if next_date.date() == current.date():
                 return next(r_rule)
 
             return next_date
 
         if self.value == self.TOMORROW:
-            return base + dt.timedelta(days=1)
+            return current + dt.timedelta(days=1)
 
         if self.value == self.DAY_AFTER_TOMORROW:
-            return base + dt.timedelta(days=2)
+            return current + dt.timedelta(days=2)
 
         if self.value == self.TODAY:
-            return base
+            return current
 
         raise NotImplementedError
 
