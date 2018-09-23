@@ -87,7 +87,7 @@ def print_exact_time(bot, update):
     else:
         when = human_format(extract.time)
         text = f"""
-        "{extract.task}" — напомню "{when}" ({extract.time.strftime('%Y-%m-%d %H:%M')})
+        "{extract.task}" — напомню {when} ({extract.time.strftime('%Y-%m-%d %H:%M')})
         """
 
     bot.send_message(chat_id=update.message.chat_id, text=text)
