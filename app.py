@@ -1,6 +1,7 @@
 import datetime as dt
 import logging
 import os
+import locale
 
 import dotenv
 from telegram.ext import CommandHandler, StringCommandHandler
@@ -8,6 +9,8 @@ from telegram.ext import MessageHandler, Filters
 from telegram.ext import Updater
 
 from exact_time import extractor
+
+locale.setlocale(locale.LC_ALL, "ru_RU.utf8")
 
 dotenv.load_dotenv(dotenv.find_dotenv())
 
