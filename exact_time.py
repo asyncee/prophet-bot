@@ -14,6 +14,7 @@ HourAndMinute = fact("HourAndMinute", ["hour", "minute"])  # get_time
 Time = fact("Time", ["time"])  # get_time
 TimeOfDay = fact("TimeOfDay", ["time"])  # get_time
 AtTime = fact("AtTime", ["time", "time_of_day", "day"])
+DeltaTime = fact("DeltaTime", ["years", "months", "weeks", "days", "minutes", "seconds"])
 Date = fact("Date", ["year", "month", "day"])
 DayName = fact("DayName", ["name"])
 
@@ -103,6 +104,12 @@ class AtTime(AtTime):
         if self.time_of_day:
             return self.time_of_day.default_time()
         return dt.time(9, 0)
+
+
+class DeltaTime(DeltaTime):
+
+    def get_datetime(self, current) -> dt.datetime:
+        return dt.datetime.combine(current, dt.time(current.hour, self.minutes.minute))
 
 
 MONTHS = {
@@ -335,6 +342,8 @@ FROM = or_(rule("с"))
 AT_TIME_OF_DAY = dictionary(TIMES_OF_DAY).interpretation(
     TimeOfDay.time.normalized().custom(time_of_day)
 )
+
+
 EXACT_TIME = or_(
     # в (день) в время (время дня)
     # в понедельник в 10 утра
@@ -397,7 +406,30 @@ EXACT_TIME = or_(
 # Для обработки особого случая
 DAYNAME_ON_START = rule(AT.optional(), DAYNAME.interpretation(DayName.name)).interpretation(DayName)
 
-parser = Parser(EXACT_TIME)
+
+AFTER = rule('через')
+DELTA_TIME = or_(
+    rule(
+        AFTER,
+        MINUTE.interpretation(DeltaTime.minutes),
+    )
+).interpretation(DeltaTime)
+
+ParseResult = fact('ParseResult', ['exact', 'delta'])
+class ParseResult(ParseResult):
+    @property
+    def result(self):
+        return self.exact or self.delta
+
+
+EXACT_OR_DELTA = or_(
+    EXACT_TIME.interpretation(ParseResult.exact),
+    DELTA_TIME.interpretation(ParseResult.delta),
+).interpretation(ParseResult)
+
+
+# parser = Parser(EXACT_TIME)
+parser = Parser(EXACT_OR_DELTA)
 at_dayname_parser = Parser(DAYNAME_ON_START)
 
 
@@ -423,14 +455,20 @@ def extractor(string, moment=None) -> Optional[Extract]:
         return
 
     match = matches[0]
+    print(match)
+    print(match.span)
 
     task = (string[: match.span.start] + string[match.span.stop :]).strip()
 
-    fact = match.fact
-    if not fact.day and day_match:
-        fact.day = day_match.fact.name
-        day_time_string = string[day_match.span.start : day_match.span.stop] + " "
-        task = task[day_match.span.stop :].strip()
+    parse_result = match.fact
+    print(parse_result)
+
+    fact = parse_result.result  # ParseResult
+    if parse_result.exact:
+        if not fact.day and day_match:
+            fact.day = day_match.fact.name
+            day_time_string = string[day_match.span.start : day_match.span.stop] + " "
+            task = task[day_match.span.stop :].strip()
 
     time = fact.get_datetime(moment)
     time_string = day_time_string + string[match.span.start : match.span.stop]
