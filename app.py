@@ -57,7 +57,8 @@ def print_unrecognized_phrases(bot, update):
 
 
 def print_timezone(bot, update):
-    return dt.datetime.now(dt.timezone.utc).astimezone().tzname()
+    tz = dt.datetime.now(dt.timezone.utc).astimezone().tzname()
+    bot.send_message(chat_id=update.message.chat_id, text=tz)
 
 
 def unknown(bot, update):
