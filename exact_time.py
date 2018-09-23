@@ -390,13 +390,11 @@ EXACT_TIME = or_(
         TIME.interpretation(AtTime.time).optional(),
         AT_TIME_OF_DAY.interpretation(AtTime.time_of_day),
     ),
-    # завтра в налоговую в 10 часов
-    # rule(
-    #     DAYNAME.optional().interpretation(AtTime.day),
-    #     true().repeatable(max=10),
-    #     AT,
-    #     TIME.interpretation(AtTime.time).optional(),
-    # ),
+    # ... завтра
+    rule(
+        AT.optional(),
+        DAYNAME.interpretation(AtTime.day),
+    ),
 ).interpretation(AtTime)
 
 # Для обработки особого случая
