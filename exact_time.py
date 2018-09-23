@@ -1,6 +1,7 @@
 import datetime as dt
 import enum
 from collections import namedtuple
+from typing import Optional
 
 from dateutil import rrule
 from yargy import rule, and_, or_, Parser
@@ -388,18 +389,39 @@ EXACT_TIME = or_(
         FROM,
         TIME.interpretation(AtTime.time).optional(),
         AT_TIME_OF_DAY.interpretation(AtTime.time_of_day),
-    )
+    ),
+    # завтра в налоговую в 10 часов
+    # rule(
+    #     DAYNAME.optional().interpretation(AtTime.day),
+    #     true().repeatable(max=10),
+    #     AT,
+    #     TIME.interpretation(AtTime.time).optional(),
+    # ),
 ).interpretation(AtTime)
 
+# Для обработки особого случая
+DAYNAME_ON_START = rule(AT.optional(), DAYNAME.interpretation(DayName.name)).interpretation(DayName)
 
 parser = Parser(EXACT_TIME)
+at_dayname_parser = Parser(DAYNAME_ON_START)
 
 
 Extract = namedtuple("Extract", "time, task, time_string, match")
 
 
-def extractor(string, moment=None) -> Extract:
+def extractor(string, moment=None) -> Optional[Extract]:
     moment = moment or dt.datetime.now()
+
+    # Особый случай, когда вначале строки может быть указатель на день:
+    # сегодня в магазин в 10; в субботу в магазин в 12 и тд.
+    matches = list(at_dayname_parser.findall(string))
+    day_match = None
+    day_time_string = ""
+
+    if len(matches) == 1:
+        match = matches[0]
+        if match.span.start == 0:
+            day_match = match
 
     matches = list(parser.findall(string))
     if not matches:
@@ -407,20 +429,14 @@ def extractor(string, moment=None) -> Extract:
 
     match = matches[0]
 
-    time = match.fact.get_datetime(moment)
     task = (string[: match.span.start] + string[match.span.stop :]).strip()
-    time_string = string[match.span.start : match.span.stop]
+
+    fact = match.fact
+    if not fact.day and day_match:
+        fact.day = day_match.fact.name
+        day_time_string = string[day_match.span.start : day_match.span.stop] + " "
+        task = task[day_match.span.stop :].strip()
+
+    time = fact.get_datetime(moment)
+    time_string = day_time_string + string[match.span.start : match.span.stop]
     return Extract(time, task, time_string, match)
-
-
-# print("---dates---")
-# parser = Parser(DATE)
-#
-# for case in ["18.12.2018"]:
-#     print(">>>", case)
-#     matches = list(parser.findall(case))
-#     if not matches:
-#         print("!! no matches")
-#
-#     for match in matches:
-#         print(match.fact)

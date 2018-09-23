@@ -52,9 +52,6 @@ cases = [
                 "завтра в 10 утра",
                 dt.datetime(2018, 1, 2, 10, 0),
             ),
-            # Это не поддерживается, т.к. завтра находится вначале, а в 10 часов вконце строки,
-            # нужно конкатенировать факты.
-            # >>> ("завтра в налоговую в 10 часов", "завтра в 10 часов", dt.datetime(2018, 1, 2, 10, 0)),
             ("сходить в магазин вечером", "вечером", dt.datetime(2018, 1, 1, 19, 0)),
             (
                 "сходить в магазин сегодня вечером",
@@ -74,6 +71,9 @@ cases = [
             ("напомни проснуться завтра с утра", "завтра с утра", dt.datetime(2018, 1, 2, 9, 0)),
             ("напомни завтра с утра проснуться", "завтра с утра", dt.datetime(2018, 1, 2, 9, 0)),
             ("напомни проснуться завтра утром", "завтра утром", dt.datetime(2018, 1, 2, 9, 0)),
+
+            ("завтра в налоговую в 10 часов", "завтра в 10 часов", dt.datetime(2018, 1, 2, 10, 0)),
+            ("в субботу в налоговую в 10 часов", "в субботу в 10 часов", dt.datetime(2018, 1, 6, 10, 0)),
         ],
     )
 ]
@@ -85,8 +85,7 @@ for test_time, cases in cases:
     @pytest.mark.parametrize("case, case_time, moment", cases)
     def f(case, case_time, moment):
         extract = extractor(case, moment=test_time)
-        print(extract.match.fact)
-        print(extract.match.tokens)
+        print('\n', extract.match.fact)
         assert extract is not None
 
         assert moment == extract.time
