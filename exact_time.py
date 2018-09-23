@@ -330,6 +330,7 @@ DATE = or_(
 DAYNAME = dictionary(DAYS).interpretation(DayName.name.normalized().custom(day))
 
 AT = or_(rule("в"), rule("во"))
+FROM = or_(rule("с"))
 AT_TIME_OF_DAY = dictionary(TIMES_OF_DAY).interpretation(
     TimeOfDay.time.normalized().custom(time_of_day)
 )
@@ -381,13 +382,20 @@ EXACT_TIME = or_(
         AT,
         TIME.interpretation(AtTime.time),
     ),
+    # завтра с утра
+    rule(
+        DAYNAME.optional().interpretation(AtTime.day),
+        FROM,
+        TIME.interpretation(AtTime.time).optional(),
+        AT_TIME_OF_DAY.interpretation(AtTime.time_of_day),
+    )
 ).interpretation(AtTime)
 
 
 parser = Parser(EXACT_TIME)
 
 
-Extract = namedtuple("Extract", "time, task, time_string, fact")
+Extract = namedtuple("Extract", "time, task, time_string, match")
 
 
 def extractor(string, moment=None) -> Extract:
@@ -402,7 +410,7 @@ def extractor(string, moment=None) -> Extract:
     time = match.fact.get_datetime(moment)
     task = (string[: match.span.start] + string[match.span.stop :]).strip()
     time_string = string[match.span.start : match.span.stop]
-    return Extract(time, task, time_string, match.fact)
+    return Extract(time, task, time_string, match)
 
 
 # print("---dates---")

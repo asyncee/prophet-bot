@@ -63,14 +63,16 @@ cases = [
             ),
             ("сходить в магазин завтра днём", "завтра днём", dt.datetime(2018, 1, 2, 14, 0)),
             ("Покушать в воскресенье", "в воскресенье", dt.datetime(2018, 1, 7, 9, 0)),
-            # ("Поесть с утра", "с утра", dt.datetime(2018, 1, 2, 9, 0)),
             (
                 "напомни проснуться завтра утром в 10:35",
                 "завтра утром в 10:35",
                 dt.datetime(2018, 1, 2, 10, 35),
             ),
-            # "напомни проснуться завтра с утра",
-            # "напомни завтра с утра проснуться",
+            ("поесть с утра", "с утра", dt.datetime(2018, 1, 2, 9, 0)),
+            ("поесть с вечера", "с вечера", dt.datetime(2018, 1, 1, 19, 0)),
+            ("поесть с 11 утра", "с 11 утра", dt.datetime(2018, 1, 2, 11, 0)),
+            ("напомни проснуться завтра с утра", "завтра с утра", dt.datetime(2018, 1, 2, 9, 0)),
+            ("напомни завтра с утра проснуться", "завтра с утра", dt.datetime(2018, 1, 2, 9, 0)),
             ("напомни проснуться завтра утром", "завтра утром", dt.datetime(2018, 1, 2, 9, 0)),
         ],
     )
@@ -83,7 +85,8 @@ for test_time, cases in cases:
     @pytest.mark.parametrize("case, case_time, moment", cases)
     def f(case, case_time, moment):
         extract = extractor(case, moment=test_time)
-        print(extract.fact)
+        print(extract.match.fact)
+        print(extract.match.tokens)
         assert extract is not None
 
         assert moment == extract.time
