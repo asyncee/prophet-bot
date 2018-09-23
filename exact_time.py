@@ -391,10 +391,7 @@ EXACT_TIME = or_(
         AT_TIME_OF_DAY.interpretation(AtTime.time_of_day),
     ),
     # ... завтра
-    rule(
-        AT.optional(),
-        DAYNAME.interpretation(AtTime.day),
-    ),
+    rule(AT.optional(), DAYNAME.interpretation(AtTime.day)),
 ).interpretation(AtTime)
 
 # Для обработки особого случая
