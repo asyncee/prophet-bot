@@ -46,13 +46,17 @@ def is_tomorrow(moment):
     return dt.datetime.today().date() + dt.timedelta(days=1) == moment.date()
 
 
+def is_day_after_tomorrow(moment):
+    return dt.datetime.today().date() + dt.timedelta(days=2) == moment.date()
+
+
 def is_on_this_week(moment):
     start = moment - dt.timedelta(days=moment.weekday())
     return start <= moment <= start + dt.timedelta(days=7)
 
 
 def human_format_dayofweek(moment):
-    moment.strftime('%A')
+    return moment.strftime('%A')
 
 
 def human_format_date(moment):
@@ -69,6 +73,8 @@ def human_format(moment):
         date = 'сегодня'
     elif is_tomorrow(moment):
         date = 'завтра'
+    elif is_day_after_tomorrow(moment):
+        date = f'послезавтра ({human_format_dayofweek(moment)})'
     elif is_on_this_week(moment):
         date = f'в эту {human_format_dayofweek(moment)}'
     else:
