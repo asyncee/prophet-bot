@@ -1,16 +1,13 @@
 import datetime as dt
 import logging
 import os
-import locale
 
 import dotenv
-from telegram.ext import CommandHandler, StringCommandHandler
+from telegram.ext import CommandHandler
 from telegram.ext import MessageHandler, Filters
 from telegram.ext import Updater
 
 from exact_time import extractor
-
-locale.setlocale(locale.LC_ALL, "ru_RU.utf8")
 
 dotenv.load_dotenv(dotenv.find_dotenv())
 
@@ -37,7 +34,7 @@ def start(bot, update):
         text="""
         Привет! Я напоминалка! Напиши мне, о чём тебе стоит напомнить простой строкой, например,
         "сходить в магазин завтра в 10:30"
-        """
+        """,
     )
 
 
@@ -59,7 +56,7 @@ def is_on_this_week(moment):
 
 
 def human_format_dayofweek(moment):
-    return moment.strftime('%A')
+    return moment.strftime("%A")
 
 
 def human_format_date(moment):
@@ -68,22 +65,22 @@ def human_format_date(moment):
 
 def human_format(moment):
     if moment.minute:
-        time = f'в {moment.hour}:{moment.minute}'
+        time = f"в {moment.hour}:{moment.minute}"
     else:
-        time = f'в {moment.hour}'
+        time = f"в {moment.hour}"
 
     if is_today(moment):
-        date = 'сегодня'
+        date = "сегодня"
     elif is_tomorrow(moment):
-        date = 'завтра'
+        date = "завтра"
     elif is_day_after_tomorrow(moment):
-        date = f'послезавтра ({human_format_dayofweek(moment)})'
+        date = f"послезавтра ({human_format_dayofweek(moment)})"
     elif is_on_this_week(moment):
-        date = f'в эту {human_format_dayofweek(moment)}'
+        date = f"в эту {human_format_dayofweek(moment)}"
     else:
         date = human_format_date(moment)
 
-    return f'{date} {time}'
+    return f"{date} {time}"
 
 
 def print_exact_time(bot, update):
@@ -92,7 +89,7 @@ def print_exact_time(bot, update):
 
     if extract is None:
         unrecognized_phrases.add(update.message.text)
-        text = 'Я ничего не поняла.'
+        text = "Я ничего не поняла."
     else:
         when = human_format(extract.time)
         text = f"""
@@ -104,7 +101,7 @@ def print_exact_time(bot, update):
 
 def print_unrecognized_phrases(bot, update):
     global unrecognized_phrases
-    text = ', '.join(unrecognized_phrases)
+    text = ", ".join(unrecognized_phrases)
     bot.send_message(chat_id=update.message.chat_id, text=text)
 
 
