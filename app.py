@@ -1,3 +1,4 @@
+import datetime as dt
 import logging
 import os
 
@@ -55,6 +56,10 @@ def print_unrecognized_phrases(bot, update):
     bot.send_message(chat_id=update.message.chat_id, text=text)
 
 
+def print_timezone(bot, update):
+    return dt.datetime.now(dt.timezone.utc).astimezone().tzname()
+
+
 def unknown(bot, update):
     bot.send_message(
         chat_id=update.message.chat_id, text="Sorry, I didn't understand that command."
@@ -66,6 +71,9 @@ dispatcher.add_handler(exact_time_handler)
 
 unrecognized_handler = CommandHandler("print", print_unrecognized_phrases)
 dispatcher.add_handler(unrecognized_handler)
+
+tz_handler = CommandHandler("timezone", print_timezone)
+dispatcher.add_handler(tz_handler)
 
 start_handler = CommandHandler("start", start)
 dispatcher.add_handler(start_handler)

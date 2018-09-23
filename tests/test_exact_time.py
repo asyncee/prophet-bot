@@ -63,18 +63,30 @@ cases = [
             ),
             ("сходить в магазин завтра днём", "завтра днём", dt.datetime(2018, 1, 2, 14, 0)),
             ("Покушать в воскресенье", "в воскресенье", dt.datetime(2018, 1, 7, 9, 0)),
-            ("Поесть с утра", "с утра", dt.datetime(2018, 1, 2, 9, 0)),
+            # ("Поесть с утра", "с утра", dt.datetime(2018, 1, 2, 9, 0)),
+            (
+                "напомни проснуться завтра утром в 10:35",
+                "завтра утром в 10:35",
+                dt.datetime(2018, 1, 2, 10, 35),
+            ),
+            # "напомни проснуться завтра с утра",
+            # "напомни завтра с утра проснуться",
+            ("напомни проснуться завтра утром", "завтра утром", dt.datetime(2018, 1, 2, 9, 0)),
         ],
     )
 ]
 
 
-@pytest.mark.parametrize("test_time, cases", cases)
-def test_cases(test_time, cases):
-    for case, case_time, moment in cases:
+# Dynamically generate test functions for each test time.
+for test_time, cases in cases:
+
+    @pytest.mark.parametrize("case, case_time, moment", cases)
+    def f(case, case_time, moment):
         extract = extractor(case, moment=test_time)
         print(extract.fact)
         assert extract is not None
 
         assert moment == extract.time
         assert case_time == extract.time_string
+
+    globals()[f"test_cases_{test_time.isoformat()}"] = f
