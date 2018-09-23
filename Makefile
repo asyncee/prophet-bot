@@ -3,3 +3,4 @@ bootstrap:
 	virtualenv -p python3.6 env
 	env/bin/pip install -U pip
 	pip install -r requirements.txt
+	pip install -r requirements-dev.txt
