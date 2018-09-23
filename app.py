@@ -38,6 +38,45 @@ def start(bot, update):
     )
 
 
+def is_today(moment):
+    return dt.datetime.today().date() == moment.date()
+
+
+def is_tomorrow(moment):
+    return dt.datetime.today().date() + dt.timedelta(days=1) == moment.date()
+
+
+def is_on_this_week(moment):
+    start = moment - dt.timedelta(days=moment.weekday())
+    return start <= moment <= start + dt.timedelta(days=7)
+
+
+def human_format_dayofweek(moment):
+    moment.strftime('%A')
+
+
+def human_format_date(moment):
+    return moment.strftime("%d %B %Y")
+
+
+def human_format(moment):
+    if moment.minute:
+        time = f'в {moment.hour}:{moment.minute}'
+    else:
+        time = f'в {moment.hour}'
+
+    if is_today(moment):
+        date = 'сегодня'
+    elif is_tomorrow(moment):
+        date = 'завтра'
+    elif is_on_this_week(moment):
+        date = f'в эту {human_format_dayofweek(moment)}'
+    else:
+        date = human_format_date(moment)
+
+    return f'{date} {time}'
+
+
 def print_exact_time(bot, update):
     global unrecognized_phrases
     extract = extractor(update.message.text)
@@ -46,8 +85,9 @@ def print_exact_time(bot, update):
         unrecognized_phrases.add(update.message.text)
         text = 'Я ничего не поняла.'
     else:
+        when = human_format(extract.time)
         text = f"""
-        "{extract.task}" — напомню "{extract.time_string}" ({extract.time.strftime('%Y-%m-%d %H:%M')})
+        "{extract.task}" — напомню "{when}" ({extract.time.strftime('%Y-%m-%d %H:%M')})
         """
 
     bot.send_message(chat_id=update.message.chat_id, text=text)
